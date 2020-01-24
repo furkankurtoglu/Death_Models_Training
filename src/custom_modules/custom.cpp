@@ -133,7 +133,6 @@ void create_cell_types( void )
 	cell_defaults.phenotype.secretion.saturation_densities[oxygen_substrate_index] = 0; 
 	
 	// add custom data here, if any 
-	
 
 	// Now, let's define another cell type. 
 	// It's best to just copy the default and modify it. 
@@ -154,12 +153,13 @@ void create_cell_types( void )
 	// Set cell-cell adhesion to 5% of other cells 
 	apoptotic_cell.phenotype.mechanics.cell_cell_adhesion_strength *= parameters.doubles( "cell_relative_adhesion" ); // 0.05; 
 	
-	// Set apoptosis to zero 
+	// Set apoptosis to user paramter
 	apoptotic_cell.phenotype.death.rates[apoptosis_model_index] = parameters.doubles( "apoptosis_rate" );
-
-	// Set proliferation to 10% of other cells. 
-	// Alter the transition rate from G0G1 state to S state
-	apoptotic_cell.phenotype.cycle.data.transition_rate(start_index,end_index) *= 0.0; // 0.1; 
+	apoptotic_cell.phenotype.death.current_parameters().unlysed_fluid_change_rate = parameters.doubles("unlysed_fluid_change_rate"); // apoptosis 
+	apoptotic_cell.phenotype.death.current_parameters().cytoplasmic_biomass_change_rate = parameters.doubles("cytoplasmic_biomass_change_rate"); // apoptosis 
+	apoptotic_cell.phenotype.death.current_parameters().nuclear_biomass_change_rate = parameters.doubles("nuclear_biomass_change_rate"); // apoptosis 
+	apoptotic_cell.phenotype.death.current_parameters().lysed_fluid_change_rate = parameters.doubles("lysed_fluid_change_rate"); // lysed necrotic cell
+	apoptotic_cell.phenotype.cycle.data.transition_rate(start_index,end_index) *= 0.0;
 	
 	
 	// necrotic cell definitions
@@ -169,11 +169,17 @@ void create_cell_types( void )
 	necrotic_cell.parameters.pReference_live_phenotype = &( necrotic_cell.phenotype ); 
 	necrotic_cell.phenotype.motility.is_motile = false;	
 	// Set apoptosis to zero 
-	necrotic_cell.phenotype.death.rates[apoptosis_model_index] = 0;
-	// Set proliferation to 10% of other cells. 
-	// Alter the transition rate from G0G1 state to S state
-	necrotic_cell.phenotype.cycle.data.transition_rate(start_index,end_index) *= 0.0; // 0.1; 
+	necrotic_cell.phenotype.death.rates[apoptosis_model_index] = 0.0;
+	necrotic_cell.phenotype.cycle.data.transition_rate(start_index,end_index) *= 0.0;
 	necrotic_cell.functions.update_phenotype = update_cell_and_death_parameters_O2_based; 
+	necrotic_cell.parameters.max_necrosis_rate = parameters.doubles( "necrosis_rate" );
+	necrotic_cell.phenotype.death.current_parameters().unlysed_fluid_change_rate = parameters.doubles("unlysed_fluid_change_rate"); // apoptosis 
+	necrotic_cell.phenotype.death.current_parameters().cytoplasmic_biomass_change_rate = parameters.doubles("cytoplasmic_biomass_change_rate"); // apoptosis 
+	necrotic_cell.phenotype.death.current_parameters().nuclear_biomass_change_rate = parameters.doubles("nuclear_biomass_change_rate"); // apoptosis 
+	necrotic_cell.phenotype.death.current_parameters().lysed_fluid_change_rate = parameters.doubles("lysed_fluid_change_rate"); // lysed necrotic cell
+	necrotic_cell.parameters.o2_necrosis_threshold = parameters.doubles("o2_necrosis_threshold");
+	necrotic_cell.parameters.o2_necrosis_max = parameters.doubles("o2_necrosis_max");
+	
 	return; 
 }
 
@@ -231,48 +237,66 @@ void setup_tissue( void )
 	double cell_radius = cell_defaults.phenotype.geometry.radius; 
 	double cell_spacing = 0.8 * 2.0 * cell_radius; 
 	double initial_tumor_radius =  parameters.doubles("initial_tumor_radius");
-	double distance_from_center =  parameters.doubles("distance_from_center");
+	double type_of_death_model = parameters.doubles("type_of_death_model");
 	
-	std::vector<std::vector<double>> positions = create_cell_circle_positions(cell_radius,initial_tumor_radius); 
-	std::cout << "creating " << positions.size() << " closely-packed cells ... " << std::endl; 
-	// create organoid
-	for( int i=0; i < positions.size(); i++ )
-	{
-		positions[i][0] = positions[i][0]-distance_from_center;
-		pCell = create_cell(apoptotic_cell);
-		pCell->assign_position( positions[i] );
-		
-	}
+	std::vector<std::vector<double>> positions = create_cell_circle_positions(cell_radius,initial_tumor_radius);
+	
 
-	for( int i=0; i < positions.size(); i++ )
-	{
-		positions[i][0] = positions[i][0]+distance_from_center;
-		pCell = create_cell(necrotic_cell);
-		pCell->assign_position( positions[i] );
-		
-	}
 	
+	if (type_of_death_model == 1)
+	{
+		std::cout << "Creating apoptotic cells" << std::endl;
+		for( int i=0; i < positions.size(); i++ )
+		{
+			pCell = create_cell(apoptotic_cell);
+			pCell->assign_position( positions[i] );
+		}
+	}
+	else if ( type_of_death_model == 2)
+	{
+		std::cout << "Creating necrotic cells" << std::endl;
+		for( int i=0; i < positions.size(); i++ )
+		{
+			pCell = create_cell(necrotic_cell);
+			pCell->assign_position( positions[i] );
+		}
+	}
+	else
+	{
+		std::cout << "Non-sense parameter has been entered!" << std::endl;
+	}
 	
 	return; 
 }
 
 std::vector<std::string> my_coloring_function( Cell* pCell )
-{
-	// start with flow cytometry coloring 
-	
+{	
 	std::vector<std::string> output = false_cell_coloring_cytometry(pCell); 
 		
 	if( pCell->phenotype.death.dead == false && pCell->type == 1 )
 	{
-		 output[0] = "blue"; 
-		 output[2] = "darkblue"; 
+		 output[0] = "lightblue"; 
+		 output[2] = "blue"; 
+	}
+	
+	if( pCell->phenotype.death.dead == true && pCell->type == 1 )
+	{
+		 output[0] = "orange"; 
+		 output[2] = "brown"; 
 	}
 	
 	if( pCell->phenotype.death.dead == false && pCell->type == 2 )
 	{
-		 output[0] = "red"; 
-		 output[2] = "darkred"; 
+		 output[0] = "green"; 
+		 output[2] = "darkgreen"; 
 	}
+
+	if( pCell->phenotype.death.dead == true && pCell->type == 2 )
+	{
+		 output[0] = "pink"; 
+		 output[2] = "purple"; 
+	}
+	
 	return output; 
 }
 
