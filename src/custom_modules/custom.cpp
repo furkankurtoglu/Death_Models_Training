@@ -131,6 +131,8 @@ void create_cell_types( void )
 	cell_defaults.phenotype.secretion.uptake_rates[oxygen_substrate_index] = 0; 
 	cell_defaults.phenotype.secretion.secretion_rates[oxygen_substrate_index] = 0; 
 	cell_defaults.phenotype.secretion.saturation_densities[oxygen_substrate_index] = 0; 
+	cell_defaults.phenotype.volume.rupture_volume=parameters.doubles( "rupture_volume" );
+	
 	
 	// add custom data here, if any 
 
@@ -173,13 +175,29 @@ void create_cell_types( void )
 	necrotic_cell.phenotype.cycle.data.transition_rate(start_index,end_index) *= 0.0;
 	necrotic_cell.functions.update_phenotype = update_cell_and_death_parameters_O2_based; 
 	necrotic_cell.parameters.max_necrosis_rate = parameters.doubles( "necrosis_rate" );
+
+
 	necrotic_cell.phenotype.death.current_parameters().unlysed_fluid_change_rate = parameters.doubles("unlysed_fluid_change_rate"); // apoptosis 
 	necrotic_cell.phenotype.death.current_parameters().cytoplasmic_biomass_change_rate = parameters.doubles("cytoplasmic_biomass_change_rate"); // apoptosis 
 	necrotic_cell.phenotype.death.current_parameters().nuclear_biomass_change_rate = parameters.doubles("nuclear_biomass_change_rate"); // apoptosis 
 	necrotic_cell.phenotype.death.current_parameters().lysed_fluid_change_rate = parameters.doubles("lysed_fluid_change_rate"); // lysed necrotic cell
 	necrotic_cell.parameters.o2_necrosis_threshold = parameters.doubles("o2_necrosis_threshold");
 	necrotic_cell.parameters.o2_necrosis_max = parameters.doubles("o2_necrosis_max");
-	
+    double necrosis_type = parameters.doubles("necrosis_type");
+    if  (necrosis_type == 1)
+    {
+    necrotic_cell.parameters.necrosis_type = PhysiCell_constants::deterministic_necrosis;
+    }
+    else if ( necrosis_type == 2)
+    {
+    necrotic_cell.parameters.necrosis_type = PhysiCell_constants::stochastic_necrosis;
+    }
+    else
+	{
+    std::cout << "Wrong parameter has been entered for necrosis type! As a default, necrosis is set as stochastic." << std::endl;
+    necrotic_cell.parameters.necrosis_type = PhysiCell_constants::stochastic_necrosis;;
+	}
+	necrotic_cell.phenotype.volume.relative_rupture_volume=parameters.doubles( "relative_rupture_volume");
 	return; 
 }
 
@@ -259,11 +277,18 @@ void setup_tissue( void )
 		{
 			pCell = create_cell(necrotic_cell);
 			pCell->assign_position( positions[i] );
+            //std::cout << pCell->parameters.necrosis_type << std::endl;
 		}
 	}
 	else
 	{
-		std::cout << "Non-sense parameter has been entered!" << std::endl;
+		std::cout << "Wrong parameter has been entered for type of death model! As a default, apoptotic cells are seeded." << std::endl;
+		std::cout << "Creating apoptotic cells" << std::endl;
+		for( int i=0; i < positions.size(); i++ )
+		{
+			pCell = create_cell(apoptotic_cell);
+			pCell->assign_position( positions[i] );
+		}
 	}
 	
 	return; 
@@ -281,8 +306,8 @@ std::vector<std::string> my_coloring_function( Cell* pCell )
 	
 	if( pCell->phenotype.death.dead == true && pCell->type == 1 )
 	{
-		 output[0] = "orange"; 
-		 output[2] = "brown"; 
+		 output[0] = "pink"; 
+		 output[2] = "purple"; 
 	}
 	
 	if( pCell->phenotype.death.dead == false && pCell->type == 2 )
@@ -291,11 +316,11 @@ std::vector<std::string> my_coloring_function( Cell* pCell )
 		 output[2] = "darkgreen"; 
 	}
 
-	if( pCell->phenotype.death.dead == true && pCell->type == 2 )
+/* 	if( pCell->phenotype.death.dead == true && pCell->type == 2 )
 	{
 		 output[0] = "pink"; 
 		 output[2] = "purple"; 
-	}
+	} */
 	
 	return output; 
 }
@@ -323,4 +348,88 @@ std::vector<std::vector<double>> create_cell_circle_positions(double cell_radius
 		}
 	}
 	return cells;
+}
+
+
+void oxygen_based_necrosis_death( Cell* pCell, Phenotype& phenotype, double dt )
+{
+	// supported cycle models:
+		// advanced_Ki67_cycle_model= 0;
+		// basic_Ki67_cycle_model=1
+		// live_cells_cycle_model = 5; 
+	
+	if( phenotype.death.dead == true )
+	{ return; }
+	
+	// set up shortcuts to find the Q and K(1) phases (assuming Ki67 basic or advanced model)
+	static bool indices_initiated = false; 
+	static int start_phase_index; // Q_phase_index; 
+	static int end_phase_index; // K_phase_index;
+	static int necrosis_index; 
+	
+	static int oxygen_substrate_index = pCell->get_microenvironment()->find_density_index( "oxygen" ); 
+	double pO2 = (pCell->nearest_density_vector())[oxygen_substrate_index];
+    
+    double necrosis_type = parameters.doubles( "necrosis_type" );
+	if ( necrosis_type == 1)
+	{
+    if( pO2 < pCell->parameters.o2_proliferation_threshold );
+    {
+        pCell->phenotype.death.rates[necrosis_index] = pCell->parameters.max_necrosis_rate;
+    }
+		
+	}
+	else if ( necrosis_type == 2)
+	{
+    if( indices_initiated == false )
+	{
+
+	
+	// this multiplier is for linear interpolation of the oxygen value 
+	double multiplier = 1.0;
+	if( pO2 < pCell->parameters.o2_proliferation_saturation )
+	{
+		multiplier = ( pO2 - pCell->parameters.o2_proliferation_threshold ) 
+			/ ( pCell->parameters.o2_proliferation_saturation - pCell->parameters.o2_proliferation_threshold );
+	}
+	if( pO2 < pCell->parameters.o2_proliferation_threshold )
+	{ 
+		multiplier = 0.0; 
+	}
+	
+	// now, update the appropriate cycle transition rate 
+	
+	phenotype.cycle.data.transition_rate(start_phase_index,end_phase_index) = multiplier * 
+		pCell->parameters.pReference_live_phenotype->cycle.data.transition_rate(start_phase_index,end_phase_index);
+	
+	// Update necrosis rate
+	multiplier = 0.0;
+	if( pO2 < pCell->parameters.o2_necrosis_threshold )
+	{
+		multiplier = ( pCell->parameters.o2_necrosis_threshold - pO2 ) 
+			/ ( pCell->parameters.o2_necrosis_threshold - pCell->parameters.o2_necrosis_max );
+	}
+	if( pO2 < pCell->parameters.o2_necrosis_max )
+	{ 
+		multiplier = 1.0; 
+	}	
+	
+	// now, update the necrosis rate 
+	
+	pCell->phenotype.death.rates[necrosis_index] = multiplier * pCell->parameters.max_necrosis_rate; 
+	
+	}
+	else
+	{
+		std::cout << "Non-sense parameter has been entered! As a default, apoptotic cells are seeded." << std::endl;
+		std::cout << "Seeding deterministic necrosis" << std::endl;
+		necrotic_cell.parameters.necrosis_type = PhysiCell_constants::deterministic_necrosis;;
+	}
+    
+    
+    
+    }
+    
+	
+	return; 
 }

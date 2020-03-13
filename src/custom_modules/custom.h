@@ -91,3 +91,4 @@ void setup_microenvironment( void );
 // custom pathology coloring function 
 std::vector<std::string> my_coloring_function( Cell* );
 std::vector<std::vector<double>> create_cell_circle_positions(double cell_radius, double sphere_radius);
+void oxygen_based_necrosis_death( Cell* pCell, Phenotype& phenotype, double dt );
