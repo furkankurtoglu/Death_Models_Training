@@ -22,6 +22,7 @@ class MicroenvTab(object):
 
         name_button_layout={'width':'25%'}
         widget_layout = {'width': '15%'}
+        widget2_layout = {'width': '10%'}
         units_button_layout ={'width':'15%'}
         desc_button_layout={'width':'45%'}
 
@@ -40,10 +41,10 @@ class MicroenvTab(object):
           step=0.01,style=style, layout=widget_layout)
         param_name3 = Button(description='initial_condition', disabled=True, layout=name_button_layout)
 
-        self.oxygen_initial_condition = FloatText(value=4.9,style=style, layout=widget_layout)
+        self.oxygen_initial_condition = FloatText(value=1.5,style=style, layout=widget_layout)
         param_name4 = Button(description='Dirichlet_boundary_condition', disabled=True, layout=name_button_layout)
 
-        self.oxygen_Dirichlet_boundary_condition = FloatText(value=4.9,style=style, layout=widget_layout)
+        self.oxygen_Dirichlet_boundary_condition = FloatText(value=2.4,style=style, layout=widget_layout)
         self.oxygen_Dirichlet_boundary_condition_toggle = Checkbox(description='on/off', disabled=False,style=style, layout=widget_layout)
         self.calculate_gradient = Checkbox(description='calculate_gradients', disabled=False, layout=desc_button_layout)
         self.track_internal = Checkbox(description='track_in_agents', disabled=False, layout=desc_button_layout)

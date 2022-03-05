@@ -186,18 +186,18 @@ void create_cell_types( void )
     double necrosis_type = parameters.doubles("necrosis_type");
     if  (necrosis_type == 1)
     {
-    necrotic_cell.parameters.necrosis_type = PhysiCell_constants::deterministic_necrosis;
+        necrotic_cell.parameters.necrosis_type = PhysiCell_constants::deterministic_necrosis;
     }
     else if ( necrosis_type == 2)
     {
-    necrotic_cell.parameters.necrosis_type = PhysiCell_constants::stochastic_necrosis;
+        necrotic_cell.parameters.necrosis_type = PhysiCell_constants::stochastic_necrosis;
     }
     else
 	{
-    std::cout << "Wrong parameter has been entered for necrosis type! As a default, necrosis is set as stochastic." << std::endl;
-    necrotic_cell.parameters.necrosis_type = PhysiCell_constants::stochastic_necrosis;;
+        std::cout << "Wrong parameter has been entered for necrosis type! As a default, necrosis is set as stochastic." << std::endl;
+        necrotic_cell.parameters.necrosis_type = PhysiCell_constants::stochastic_necrosis;
 	}
-	necrotic_cell.phenotype.volume.relative_rupture_volume=parameters.doubles( "relative_rupture_volume");
+        necrotic_cell.phenotype.volume.relative_rupture_volume=parameters.doubles( "relative_rupture_volume");
 	return; 
 }
 

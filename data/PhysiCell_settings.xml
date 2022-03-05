@@ -120,8 +120,8 @@
 				<diffusion_coefficient units="micron^2/min">100000.0</diffusion_coefficient>
 				<decay_rate units="1/min">0.0</decay_rate>  
 			</physical_parameter_set>
-			<initial_condition units="mmHg">4.9</initial_condition>
-			<Dirichlet_boundary_condition units="mmHg" enabled="false">4.9</Dirichlet_boundary_condition>
+			<initial_condition units="mmHg">1.5</initial_condition>
+			<Dirichlet_boundary_condition units="mmHg" enabled="false">2.4</Dirichlet_boundary_condition>
 		</variable>
 		
 		<options>
@@ -133,21 +133,26 @@
 	<user_parameters>
 		<random_seed type="int" units="dimensionless" hidden="true">0</random_seed> 
 		
+        
+        <div_domain type="divider" description="---Domain Options---"/>
 		<!-- example parameters from the template --> 
 		<type_of_death_model type="double" units='' description="1->apoptosis 2->necrosis">1</type_of_death_model>
 		<initial_tumor_radius type="double" units="micrometer" description="initial tumor radius">150</initial_tumor_radius>
 		<cell_relative_adhesion type="double" units="dimensionless" hidden="true" >0.05</cell_relative_adhesion> <!--0.05-->
 
-		<apoptosis_rate type="double" units="1/min" description="mean apoptosis rate">0.00014</apoptosis_rate> <!--0.0014-->
+        <div_apop type="divider" description="---Apoptosis---"/>
+		<apoptosis_rate type="double" units="1/min" description="mean apoptosis rate">0.0014</apoptosis_rate> <!--0.0014-->
+        <div_nec type="divider" description="---Necrosis---"/>
 		<necrosis_rate type="double" units="1/min" description="mean necrosis rate">0.00277777777</necrosis_rate> <!-- 1.0 / (6.0 * 60.0) = 0.00277777777-->
 		<necrosis_type type="double" units='' description="1->deterministic 2->stochastic">2</necrosis_type>
 		
-		<rupture_volume type="double" units="1/min" description="volume at which a cell will burst or lyse">4988</rupture_volume> <!-- 4988 cubic-micron --> 
-		<relative_rupture_volume type="double" units="1/min" description="relative_rupture_volume">2.0</relative_rupture_volume> <!-- 2.0 --> 
+		<rupture_volume type="double" units="1/min" hidden="true" description="volume at which a cell will burst or lyse">4988</rupture_volume> <!-- 4988 cubic-micron --> 
+		<relative_rupture_volume type="double" units="1/min" hidden="true" description="relative_rupture_volume">2.0</relative_rupture_volume> <!-- 2.0 --> 
 
 		<o2_necrosis_threshold type="double" units="mmHG" description="oxygen threshold level for dying with necrotic death">5.0</o2_necrosis_threshold> 
 		<o2_necrosis_max type="double" units="mmHG" description="oxygen threshold level for maximum rate of necrotic death">2.5</o2_necrosis_max>
 		
+        <div_fluid type="divider" description="---Fluid change rates---"/>
 		<cytoplasmic_biomass_change_rate type="double" units="1/min" description="rate of degradation for solids in the cytoplasm other than the nucleus">0.01666666</cytoplasmic_biomass_change_rate> <!-- apoptosis 1.0/60.0 = 0.01666666-->
 		<nuclear_biomass_change_rate type="double" units="1/min" description="rate of degradation for nucleus solids">0.00583333333</nuclear_biomass_change_rate> <!-- apoptosis 0.35/60.0 = 0.00583333333-->
 		
