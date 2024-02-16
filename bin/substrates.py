@@ -1105,6 +1105,7 @@ class SubstrateTab(object):
                 # cbar = self.fig.colorbar(substrate_plot, ax=main_ax)
                 cbar = self.fig.colorbar(substrate_plot)
                 cbar.ax.tick_params(labelsize=self.fontsize)
+                cbar.set_label('mmHg',size=self.fontsize)
                 # cbar = main_ax.colorbar(my_plot)
                 # cbar.ax.tick_params(labelsize=self.fontsize)
             # axes_min = 0
@@ -1137,6 +1138,15 @@ class SubstrateTab(object):
             self.svg_frame = frame
             # print('plot_svg with frame=',self.svg_frame)
             self.plot_svg(self.svg_frame)
+            fname = "output%08d_microenvironment0.mat" % self.substrate_frame
+            full_fname = os.path.join(self.output_dir, fname)
+            if os.path.isfile(full_fname):            
+                x1 = -200
+                x2 = -100
+                y1 = -200
+                y2 = -200
+                plt.plot([x1,x2],[y1,y2], 'k', linewidth = 5)
+                plt.text(-165, -190, u"100 \u03bcm")
 
         # plt.subplot(grid[2, 0])
         # oxy_ax = self.fig.add_subplot(grid[2:, 0:1])
